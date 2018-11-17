@@ -1,0 +1,95 @@
+Function phSoli(hw, dw, y1, y2, gh, gs, fi, c, K, d, psup) As Double
+'phSoli is the static horizontal load due to a single layer of soil
+'   hw is the water height in m from the reference
+'   dw is the density of the water
+'   y1 is the top height of the soil layer in m
+'   y2 is the bottom height of the soil layer in m
+'   gh is density of dry soil
+'   gs is the density of the saturated soil
+'   c is the soil cohesion
+'   K is the soil horizontal load coefficient
+'   d is the angle of the dynamic load
+
+
+Pi = 3.14159265359
+di = d * Pi / 180
+fj = fi * Pi / 180
+gd = gs - 10 * dw
+p1 = psup * K * Cos(di)
+
+pc = c / Tan(fj) * (1 - K * Cos(di))
+
+If hw >= y1 Then
+    p2 = (psup + gd * (y1 - y2)) * K * Cos(di)
+phSoli = Volph((y1 - y2), p1, p2, pc)
+ElseIf hw > y2 Then
+    pw = (psup + gh * (y1 - hw)) * K * Cos(di)
+    p2 = (psup + gh * (y1 - hw) + gd * (hw - y2)) * K * Cos(di)
+phSoli = Volph((y1 - hw), p1, pw, pc) + Volph((hw - y2), pw, p2, pc)
+Else:
+    p2 = (psup + gh * (y1 - y2)) * K * Cos(di)
+phSoli = Volph((y1 - y2), p1, p2, pc)
+End If
+
+End Function
+
+Function phSol(yw, dw, ye, h1, gh1, gs1, fi1, c1, K1, d1, h2, gh2, gs2, fi2, c2, K2, d2, h3, gh3, gs3, fi3, c3, K3, d3) As Double
+'phSoli is the static horizontal load due to one, two or three layers of soil
+'   yw is the water height in m from the reference
+'   dw is the density of the water
+'   ye is the reference height
+'   hn is the top height of soil n
+'   ghn is the dry density of soil n
+'   gsn is the saturated density of soil n
+'   cn is the cohesion of soil n
+'   K is the soil horizontal load coefficient
+'   d is the angle of the dynamic load
+
+
+If h3 = 0 Then
+fi3 = 45
+End If
+If h2 = 0 Then
+fi2 = 45
+End If
+
+
+gd1 = gs1 - 10 * dw
+gd2 = gs2 - 10 * dw
+gd3 = gs3 - 10 * dw
+y3 = h3
+y2 = y3 + h2
+y1 = y2 + h1
+If yw < ye Then
+hw = 0
+Else: hw = yw - ye
+End If
+
+If hw >= y1 Then
+    psup2 = gd1 * h1
+    psup3 = gd1 * h1 + gd2 * h2
+ElseIf hw > y2 Then
+    psup2 = gh1 * (y1 - hw) + gd1 * (hw - y2)
+    psup3 = (gh1 * (y1 - hw) + gd1 * (hw - y2)) + (gd2 * h2)
+ElseIf hw > y3 Then
+    psup2 = gh1 * h1
+    psup3 = gh1 * h1 + gh2 * (y2 - hw) + gd2 * (hw - y3)
+Else:
+    psup2 = gh1 * h1
+    psup3 = gh1 * h1 + gh2 * h2
+End If
+
+psol1 = phSoli(hw, dw, y1, y2, gh1, gs1, fi1, c1, K1, d1, 0)
+psol2 = phSoli(hw, dw, y2, y3, gh2, gs2, fi2, c2, K2, d2, psup2)
+psol3 = phSoli(hw, dw, y3, 0, gh3, gs3, fi3, c3, K3, d3, psup3)
+
+If y3 = 0 And y2 = 0 And y1 = 0 Then
+phSol = 0
+ElseIf y3 = 0 And y2 = 0 Then
+phSol = psol1
+ElseIf y3 = 0 Then
+phSol = psol1 + psol2
+Else:
+phSol = psol1 + psol2 + psol3
+End If
+End Function
